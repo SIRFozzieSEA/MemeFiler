@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<title>MemeFiler</title>
+<style type="text/css">
+.auto-style1 {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: medium;
+}
+.auto-style2 {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: x-large;
+}
+.auto-style3 {
+	text-align: center;
+}
+.auto-style4 {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: medium;
+	text-align: center;
+}
+</style>
+</head>
+
+<body onLoad="document.f1.targetPath.focus()">
+	<form name="f1" action="#" th:action="@{/}" method="post">
+	
+	
+	<br><br>
+	<div class="auto-style3">
+	<span class="auto-style2"><strong>MemeFiler</strong></span>
+	</div>
+	<br>
+	
+	<table cellpadding="4" cellspacing="4" style="width: 100%">
+
+		<tr>
+			<td class="auto-style3">
+			
+				<img height="380" border="2" alt="" th:src="'/getImage?imageName=' + ${sourcePathFull}" />
+			
+			</td>
+		</tr>
+		<tr>
+			<td class="auto-style4">&nbsp;</td>
+		</tr>
+		<tr>
+			<td class="auto-style4">
+				<input autocomplete="off" name="targetPath" id="targetPath" list="dataFolder">
+				<datalist id="dataFolder">
+				    <option th:each="folder : ${folderPaths}" th:value="${folder}" th:text="${folder}">
+				</datalist> 	
+				<input name="Submit1" type="submit" value="Submit" />
+			</td>
+		</tr>
+		
+	</table>
+	
+	
+	
+	<input type="hidden" style="width: 400px" name="sourcePathFull" id="sourcePathFull" th:value="${sourcePathFull}" />
+	<BR>
+	<input type="hidden" style="width: 400px" name="sourceExtension" id="sourceExtension" th:value="${sourceExtension}" />
+	
+	
+	
+	</form>
+</body>
+
+</html>
