@@ -46,7 +46,7 @@ public class MemeFilerController {
 	private TreeSet<String> folderPaths = new TreeSet<String>();
 	private TreeSet<String> filetypes = new TreeSet<String>();
 
-	private int totalCount = 0;
+	private int totalCount = 1;
 
 	@GetMapping("/")
 	public String indexLaunch(HttpServletRequest request, Model model) {
@@ -208,6 +208,9 @@ public class MemeFilerController {
 	}
 
 	private void initializeApp() {
+		
+		totalCount = 1;
+		
 		visitFolders(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
 
 		File directory = new File(env.getProperty("MEME_SORT_FOLDER"));
