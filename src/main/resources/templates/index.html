@@ -5,22 +5,54 @@
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
 <title>MemeFiler</title>
 <style type="text/css">
-.auto-style1 {
-	font-family: Verdana, Geneva, Tahoma, sans-serif;
-	font-size: medium;
+
+a {
+	color: #000000;
+	text-decoration: none
 }
-.auto-style2 {
+
+a:visited {
+	color: #000000;
+	text-decoration: none
+}
+
+a:active {
+	color: #000000;
+	text-decoration: none
+}
+
+a:hover {
+	color: red;
+	text-decoration: none
+}
+
+.center-div {
+	text-align: center;
+}
+
+.page-header {
 	font-family: Verdana, Geneva, Tahoma, sans-serif;
 	font-size: x-large;
 }
-.auto-style3 {
-	text-align: center;
+
+.small-text {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: small;
 }
-.auto-style4 {
+
+.done-message {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: 36pt;
+	color: red;
+}
+
+.restart-link {
 	font-family: Verdana, Geneva, Tahoma, sans-serif;
 	font-size: medium;
-	text-align: center;
 }
+
+
+
 </style>
 </head>
 
@@ -28,27 +60,38 @@
 	<form name="f1" action="#" th:action="@{/}" method="post">
 	
 	
-	<br><br>
-	<div class="auto-style3">
-	<span class="auto-style2"><strong>MemeFiler</strong></span>
-	</div>
+	<br>
+	<br>
+		<div class="center-div">
+			<span class="page-header"><strong>MemeFiler</strong></span><BR>
+			<span class="small-text" th:text="${fileTypes}"></span>
+		</div>
 	<br>
 	
 	<table cellpadding="4" cellspacing="4" style="width: 100%">
 
 		<tr>
-			<td class="auto-style3">
+			<td class="center-div">
 			
-				<img height="380" border="2" alt="" th:src="'/getImage?imageName=' + ${sourcePathFull}" />
+				<div th:if="${sourcePathFull == ''}">
+					<br>
+						<div class="center-div">
+							<span class="done-message"><strong>DONE!</strong></span>
+						</div>
+					<br>
+				</div>
+				<div th:unless="${sourcePathFull == ''}">
+					<div class="center-div">
+						<img height="600" border="2" alt="" th:src="'/getImage?imageName=' + ${sourcePathFull}" />
+						<BR><span class="small-text" th:text="${sourcePathFull}"></span>
+					</div>
+				</div>
 			
 			</td>
 		</tr>
 		<tr>
-			<td class="auto-style4">&nbsp;</td>
-		</tr>
-		<tr>
-			<td class="auto-style4">
-				<input autocomplete="off" name="targetPath" id="targetPath" list="dataFolder">
+			<td class="center-div">
+				<input style="width: 400px" autocomplete="off" name="targetPath" id="targetPath" list="dataFolder">
 				<datalist id="dataFolder">
 				    <option th:each="folder : ${folderPaths}" th:value="${folder}" th:text="${folder}">
 				</datalist> 	
@@ -56,17 +99,24 @@
 			</td>
 		</tr>
 		
+		<tr>
+			<td class="center-div">&nbsp;</td>
+		</tr>
+		
+		<tr>
+			<td class="center-div">
+				<span class="restart-link"><a href="?restart=true"><strong>Restart</strong></a></span>
+			</td>
+		</tr>
+		
+		
 	</table>
 	
-	
-	
 	<input type="hidden" style="width: 400px" name="sourcePathFull" id="sourcePathFull" th:value="${sourcePathFull}" />
-	<BR>
 	<input type="hidden" style="width: 400px" name="sourceExtension" id="sourceExtension" th:value="${sourceExtension}" />
 	
-	
-	
 	</form>
+	
 </body>
 
 </html>

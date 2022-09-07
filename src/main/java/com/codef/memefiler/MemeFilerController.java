@@ -1,5 +1,6 @@
 package com.codef.memefiler;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import javax.activation.FileTypeMap;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -40,14 +42,22 @@ public class MemeFilerController {
 	private boolean folderPathsInitialized = false;
 	private int fileMemeIndex = 0;
 	private List<File> fileMemes = new ArrayList<File>();
+
 	private TreeSet<String> folderPaths = new TreeSet<String>();
-	
-	private static int totalCount = 0;
+	private TreeSet<String> filetypes = new TreeSet<String>();
+
+	private int totalCount = 0;
 
 	@GetMapping("/")
-	public String indexLaunch(Model model) {
+	public String indexLaunch(HttpServletRequest request, Model model) {
+
+		if (request.getParameter("restart") != null) {
+			folderPathsInitialized = false;
+		}
+
 		if (!folderPathsInitialized) {
 			initializeApp();
+			checkFileTypes();
 			folderPathsInitialized = true;
 		}
 		attachMeme(model);
@@ -70,15 +80,7 @@ public class MemeFilerController {
 					.contentType(MediaType.valueOf(FileTypeMap.getDefaultFileTypeMap().getContentType(img)))
 					.body(Files.readAllBytes(img.toPath()));
 		} catch (IOException e) {
-			try {
-				File img = new File(env.getProperty("DONE_IMAGE"));
-				return ResponseEntity.ok()
-						.contentType(MediaType.valueOf(FileTypeMap.getDefaultFileTypeMap().getContentType(img)))
-						.body(Files.readAllBytes(img.toPath()));
-			} catch (IOException e1) {
-				e1.printStackTrace();
-				return null;
-			}
+			return null;
 		}
 	}
 
@@ -89,18 +91,48 @@ public class MemeFilerController {
 		fileMemeIndex = fileMemeIndex + 1;
 
 		String sourcePathFull = request.getParameter("sourcePathFull");
-		String sourceExtension = request.getParameter("sourceExtension");
+		String sourceExtension = request.getParameter("sourceExtension").toLowerCase();
 		String targetPath = request.getParameter("targetPath");
 
 		if (targetPath.length() > 0 && sourcePathFull.length() > 0) {
 
 			String[] folderParts = targetPath.split("\\/");
+
+			// rename JPEG to JPG
+			if (sourceExtension.equals("jpeg")) {
+				sourceExtension = "jpg";
+			}
+
+			// convert WEBP to JPEG
+			if (sourceExtension.equals("webp")) {
+				sourceExtension = "jpg";
+			}
+
 			String newMemeName = targetPath + "/"
-					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_" + getFileDateTime(totalCount)
-					+ "." + sourceExtension.toLowerCase();
+					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_"
+					+ getFileDateTime(totalCount);
 
 			try {
-				copyFile(sourcePathFull, newMemeName);
+
+				switch (sourceExtension) {
+
+				case "webp":
+					sourceExtension = "jpg";
+					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					scaleFile(sourcePathFull, newMemeName);
+					break;
+
+				case "jpeg":
+					sourceExtension = "jpg";
+					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					copyFile(sourcePathFull, newMemeName);
+					break;
+
+				default:
+					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					copyFile(sourcePathFull, newMemeName);
+				}
+
 				LOGGER.info("   Copied from: " + sourcePathFull + " to: " + newMemeName);
 				totalCount = totalCount + 1;
 
@@ -133,12 +165,14 @@ public class MemeFilerController {
 			model.addAttribute("sourcePathFull", fileMemeFullPath);
 			model.addAttribute("sourceExtension", fileMemeExtension);
 			model.addAttribute("folderPaths", folderPaths);
+			model.addAttribute("fileTypes", filetypes.toString());
 
 		} else {
 
 			model.addAttribute("sourcePathFull", "");
 			model.addAttribute("sourceExtension", "");
 			model.addAttribute("folderPaths", folderPaths);
+			model.addAttribute("fileTypes", filetypes.toString());
 
 		}
 	}
@@ -151,8 +185,8 @@ public class MemeFilerController {
 		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
 		return oDateFormatter.format(new Date()) + padLeftZeros(Integer.toString(fileNumber), 4);
 	}
-	
-	public String padLeftZeros(String inputString, int length) {
+
+	private String padLeftZeros(String inputString, int length) {
 		if (inputString.length() >= length) {
 			return inputString;
 		}
@@ -185,11 +219,11 @@ public class MemeFilerController {
 		}
 	}
 
-	public static void copyFile(String _sTargetFile, String _sDestinationFile) throws IOException {
+	private void copyFile(String _sTargetFile, String _sDestinationFile) throws IOException {
 		Files.copy(new File(_sTargetFile).toPath(), new File(_sDestinationFile).toPath());
 	}
 
-	public static void deleteFile(String _sPath, boolean _bLogEvent) {
+	private void deleteFile(String _sPath, boolean _bLogEvent) {
 		File oFile = new File(_sPath);
 		if (oFile.exists()) {
 			if (_bLogEvent) {
@@ -197,6 +231,35 @@ public class MemeFilerController {
 			}
 			oFile.delete();
 		}
+	}
+
+	private void checkFileTypes() {
+		visitFiles(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
+	}
+
+	private void visitFiles(Path path) {
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+			for (Path entry : stream) {
+				if (entry.toFile().isDirectory()) {
+					visitFiles(entry);
+				} else {
+					visitFileCode(entry.toString());
+				}
+			}
+		} catch (IOException e) {
+			LOGGER.error(e.toString(), e);
+		}
+	}
+
+	private void visitFileCode(String filePath) {
+
+		String[] fileParts = filePath.split("\\\\");
+		String fileName = fileParts[fileParts.length - 1];
+		String[] fileNameNew = fileName.split("\\.");
+		String nFileExtension = fileNameNew[fileNameNew.length - 1];
+
+		filetypes.add(nFileExtension);
+
 	}
 
 	private void visitFolders(Path path) {
@@ -214,5 +277,37 @@ public class MemeFilerController {
 
 	private void visitFolderCode(String filePath) {
 		folderPaths.add(filePath.replaceAll("\\\\", "/"));
+	}
+
+	// ------------------------------------------------------
+
+	public static void scaleFile(String _sTargetFile, String _sDestinationFile) {
+
+		try {
+			File imageFile = new File(_sTargetFile);
+			BufferedImage bufferedImage = ImageIO.read(imageFile);
+			File pathFile = new File(_sDestinationFile);
+			ImageIO.write(bufferedImage, "jpg", pathFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	// THIS IS TO CROP IMAGES
+
+	public static void cropImage(String imageFileName, File pathFile, BufferedImage bufferedImage) throws IOException {
+		if (imageFileName.contains("land")) {
+			// landscape
+			ImageIO.write(cropImage(bufferedImage, 87, 468, 600, 400), "jpg", pathFile);
+		} else {
+			// portrait
+			ImageIO.write(cropImage(bufferedImage, 179, 466, 400, 600), "jpg", pathFile);
+		}
+	}
+
+	private static BufferedImage cropImage(BufferedImage bufferedImage, int x, int y, int width, int height) {
+		BufferedImage croppedImage = bufferedImage.getSubimage(x, y, width, height);
+		return croppedImage;
 	}
 }
