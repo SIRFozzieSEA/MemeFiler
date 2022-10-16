@@ -91,21 +91,27 @@ public class MemeFilerController {
 		fileMemeIndex = fileMemeIndex + 1;
 
 		String sourcePathFull = request.getParameter("sourcePathFull");
-		String sourceExtension = request.getParameter("sourceExtension").toLowerCase();
+		String originalSourceExtension = request.getParameter("sourceExtension").toLowerCase();
 		String targetPath = request.getParameter("targetPath");
+		String targetSourceExtension = originalSourceExtension;
 
 		if (targetPath.length() > 0 && sourcePathFull.length() > 0) {
 
 			String[] folderParts = targetPath.split("\\/");
 
 			// rename JPEG to JPG
-			if (sourceExtension.equals("jpeg")) {
-				sourceExtension = "jpg";
+			if (originalSourceExtension.equals("jpeg")) {
+				targetSourceExtension = "jpg";
 			}
 
 			// convert WEBP to JPEG
-			if (sourceExtension.equals("webp")) {
-				sourceExtension = "jpg";
+			if (originalSourceExtension.equals("webp")) {
+				targetSourceExtension = "jpg";
+			}
+			
+			// convert JFIF to JPEG
+			if (originalSourceExtension.equals("jfif")) {
+				targetSourceExtension = "jpg";
 			}
 
 			String newMemeName = targetPath + "/"
@@ -114,22 +120,25 @@ public class MemeFilerController {
 
 			try {
 
-				switch (sourceExtension) {
+				switch (originalSourceExtension) {
 
 				case "webp":
-					sourceExtension = "jpg";
-					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+					scaleFile(sourcePathFull, newMemeName);
+					break;
+					
+				case "jfif":
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
 					scaleFile(sourcePathFull, newMemeName);
 					break;
 
 				case "jpeg":
-					sourceExtension = "jpg";
-					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
 					copyFile(sourcePathFull, newMemeName);
 					break;
 
 				default:
-					newMemeName = newMemeName + "." + sourceExtension.toLowerCase();
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
 					copyFile(sourcePathFull, newMemeName);
 				}
 
