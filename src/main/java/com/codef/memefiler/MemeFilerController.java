@@ -1,22 +1,17 @@
 package com.codef.memefiler;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
 
 import javax.activation.FileTypeMap;
-import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -84,142 +79,12 @@ public class MemeFilerController {
 		}
 	}
 
-	// ----------------------------
-
-	private void handleMeme(HttpServletRequest request) {
-
-		fileMemeIndex = fileMemeIndex + 1;
-
-		String sourcePathFull = request.getParameter("sourcePathFull");
-		String originalSourceExtension = request.getParameter("sourceExtension").toLowerCase();
-		String targetPath = request.getParameter("targetPath");
-		String targetSourceExtension = originalSourceExtension;
-
-		if (targetPath.length() > 0 && sourcePathFull.length() > 0) {
-
-			String[] folderParts = targetPath.split("\\/");
-
-			// rename JPEG to JPG
-			if (originalSourceExtension.equals("jpeg")) {
-				targetSourceExtension = "jpg";
-			}
-
-			// convert WEBP to JPEG
-			if (originalSourceExtension.equals("webp")) {
-				targetSourceExtension = "jpg";
-			}
-			
-			// convert JFIF to JPEG
-			if (originalSourceExtension.equals("jfif")) {
-				targetSourceExtension = "jpg";
-			}
-
-			String newMemeName = targetPath + "/"
-					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_"
-					+ getFileDateTime(totalCount);
-
-			try {
-
-				switch (originalSourceExtension) {
-
-				case "webp":
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					scaleFile(sourcePathFull, newMemeName);
-					break;
-					
-				case "jfif":
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					scaleFile(sourcePathFull, newMemeName);
-					break;
-
-				case "jpeg":
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					copyFile(sourcePathFull, newMemeName);
-					break;
-
-				default:
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					copyFile(sourcePathFull, newMemeName);
-				}
-
-				LOGGER.info("   Copied from: " + sourcePathFull + " to: " + newMemeName);
-				totalCount = totalCount + 1;
-
-				try {
-					deleteFile(sourcePathFull, false);
-					LOGGER.info("       Deleted: " + sourcePathFull + " to: " + newMemeName);
-				} catch (Exception e) {
-					LOGGER.info(" Cannot Delete: " + sourcePathFull + " to: " + newMemeName);
-				}
-
-			} catch (IOException e) {
-				LOGGER.info(" Error copying: " + sourcePathFull + " to: " + newMemeName);
-			}
-
-		} else {
-			LOGGER.error("Done or skipped.");
-		}
-
-	}
-
-	private void attachMeme(Model model) {
-		File fileMeme = getNextImageSourcePath();
-
-		if (fileMeme != null) {
-
-			String fileMemeFullPath = replaceBackSlashes(fileMeme.getAbsolutePath());
-			String fileMemeName = fileMeme.getName();
-			String fileMemeExtension = fileMemeName.split("\\.")[1];
-
-			model.addAttribute("sourcePathFull", fileMemeFullPath);
-			model.addAttribute("sourceExtension", fileMemeExtension);
-			model.addAttribute("folderPaths", folderPaths);
-			model.addAttribute("fileTypes", filetypes.toString());
-
-		} else {
-
-			model.addAttribute("sourcePathFull", "");
-			model.addAttribute("sourceExtension", "");
-			model.addAttribute("folderPaths", folderPaths);
-			model.addAttribute("fileTypes", filetypes.toString());
-
-		}
-	}
-
-	private String replaceBackSlashes(String input) {
-		return input.replaceAll("\\\\", "\\/");
-	}
-
-	private String getFileDateTime(int fileNumber) {
-		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
-		return oDateFormatter.format(new Date()) + padLeftZeros(Integer.toString(fileNumber), 4);
-	}
-
-	private String padLeftZeros(String inputString, int length) {
-		if (inputString.length() >= length) {
-			return inputString;
-		}
-		StringBuilder sb = new StringBuilder();
-		while (sb.length() < length - inputString.length()) {
-			sb.append('0');
-		}
-		sb.append(inputString);
-
-		return sb.toString();
-	}
-
-	private File getNextImageSourcePath() {
-		try {
-			return fileMemes.get(fileMemeIndex);
-		} catch (Exception e) {
-			return null;
-		}
-	}
+	// ---------------------------------------------------------
 
 	private void initializeApp() {
-		
+
 		totalCount = 1;
-		
+
 		visitFolders(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
 
 		File directory = new File(env.getProperty("MEME_SORT_FOLDER"));
@@ -228,20 +93,6 @@ public class MemeFilerController {
 		} else {
 			fileMemes = Arrays.asList(directory.listFiles());
 			fileMemeIndex = 0;
-		}
-	}
-
-	public static void copyFile(String _sTargetFile, String _sDestinationFile) throws IOException {
-		Files.copy(new File(_sTargetFile).toPath(), new File(_sDestinationFile).toPath());
-	}
-
-	public static void deleteFile(String _sPath, boolean _bLogEvent) {
-		File oFile = new File(_sPath);
-		if (oFile.exists()) {
-			if (_bLogEvent) {
-				LOGGER.info("Deleting: " + _sPath);
-			}
-			oFile.delete();
 		}
 	}
 
@@ -291,35 +142,112 @@ public class MemeFilerController {
 		folderPaths.add(filePath.replaceAll("\\\\", "/"));
 	}
 
-	// ------------------------------------------------------
-
-	public static void scaleFile(String _sTargetFile, String _sDestinationFile) {
-
+	private File getNextImageSourcePath() {
 		try {
-			File imageFile = new File(_sTargetFile);
-			BufferedImage bufferedImage = ImageIO.read(imageFile);
-			File pathFile = new File(_sDestinationFile);
-			ImageIO.write(bufferedImage, "jpg", pathFile);
-		} catch (IOException e) {
-			e.printStackTrace();
+			return fileMemes.get(fileMemeIndex);
+		} catch (Exception e) {
+			return null;
 		}
-
 	}
 
-	// THIS IS TO CROP IMAGES
+	private void handleMeme(HttpServletRequest request) {
 
-	public static void cropImage(String imageFileName, File pathFile, BufferedImage bufferedImage) throws IOException {
-		if (imageFileName.contains("land")) {
-			// landscape
-			ImageIO.write(cropImage(bufferedImage, 87, 468, 600, 400), "jpg", pathFile);
+		fileMemeIndex = fileMemeIndex + 1;
+
+		String sourcePathFull = request.getParameter("sourcePathFull");
+		String originalSourceExtension = request.getParameter("sourceExtension").toLowerCase();
+		String targetPath = request.getParameter("targetPath");
+		String targetSourceExtension = originalSourceExtension;
+
+		if (targetPath.length() > 0 && sourcePathFull.length() > 0) {
+
+			String[] folderParts = targetPath.split("\\/");
+
+			// rename JPEG to JPG
+			if (originalSourceExtension.equals("jpeg")) {
+				targetSourceExtension = "jpg";
+			}
+
+			// convert WEBP to JPEG
+			if (originalSourceExtension.equals("webp")) {
+				targetSourceExtension = "jpg";
+			}
+
+			// convert JFIF to JPEG
+			if (originalSourceExtension.equals("jfif")) {
+				targetSourceExtension = "jpg";
+			}
+
+			String newMemeName = targetPath + "/"
+					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_"
+					+ MemeFilerLibrary.getFileDateTime(totalCount);
+
+			try {
+
+				switch (originalSourceExtension) {
+
+				case "webp":
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+					MemeFilerLibrary.scaleFile(sourcePathFull, newMemeName);
+					break;
+
+				case "jfif":
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+					MemeFilerLibrary.scaleFile(sourcePathFull, newMemeName);
+					break;
+
+				case "jpeg":
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+					MemeFilerLibrary.copyFile(sourcePathFull, newMemeName);
+					break;
+
+				default:
+					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+					MemeFilerLibrary.copyFile(sourcePathFull, newMemeName);
+				}
+
+				LOGGER.info("   Copied from: " + sourcePathFull + " to: " + newMemeName);
+				totalCount = totalCount + 1;
+
+				try {
+					MemeFilerLibrary.deleteFile(sourcePathFull, false);
+					LOGGER.info("       Deleted: " + sourcePathFull + " to: " + newMemeName);
+				} catch (Exception e) {
+					LOGGER.info(" Cannot Delete: " + sourcePathFull + " to: " + newMemeName);
+				}
+
+			} catch (IOException e) {
+				LOGGER.info(" Error copying: " + sourcePathFull + " to: " + newMemeName);
+			}
+
 		} else {
-			// portrait
-			ImageIO.write(cropImage(bufferedImage, 179, 466, 400, 600), "jpg", pathFile);
+			LOGGER.error("Done or skipped.");
+		}
+
+	}
+
+	private void attachMeme(Model model) {
+		File fileMeme = getNextImageSourcePath();
+
+		if (fileMeme != null) {
+
+			String fileMemeFullPath = MemeFilerLibrary.replaceBackSlashes(fileMeme.getAbsolutePath());
+			String fileMemeName = fileMeme.getName();
+			String fileMemeExtension = fileMemeName.split("\\.")[1];
+
+			model.addAttribute("sourcePathFull", fileMemeFullPath);
+			model.addAttribute("sourceExtension", fileMemeExtension);
+			model.addAttribute("folderPaths", folderPaths);
+			model.addAttribute("fileTypes", filetypes.toString());
+
+		} else {
+
+			model.addAttribute("sourcePathFull", "");
+			model.addAttribute("sourceExtension", "");
+			model.addAttribute("folderPaths", folderPaths);
+			model.addAttribute("fileTypes", filetypes.toString());
+
 		}
 	}
 
-	private static BufferedImage cropImage(BufferedImage bufferedImage, int x, int y, int width, int height) {
-		BufferedImage croppedImage = bufferedImage.getSubimage(x, y, width, height);
-		return croppedImage;
-	}
 }

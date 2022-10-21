@@ -5,53 +5,59 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
+@Controller
+public class MemeRenamerController {
 
-public class MemeRenamer {
+	private static final Logger LOGGER = LogManager.getLogger(MemeRenamerController.class.getName());
 
-	private static boolean enableMainMethod = true;
+	private Set<String> folderSet = new TreeSet<>();
+	private TreeSet<String> filetypes = new TreeSet<String>();
+	private LinkedHashMap<String, String> finalRename = new LinkedHashMap<String, String>();
 
-	private static final Logger LOGGER = LogManager.getLogger(MemeRenamer.class.getName());
+	private int fileCount = 0;
+	private int folderCount = 0;
+	private int handledCount = 0;
 
-	private static final String renameFolder = "E:\\Zemez";
+	@Autowired
+	private Environment env;
 
-	private static Set<String> folderSet = new TreeSet<>();
-	public static TreeSet<String> filetypes = new TreeSet<String>();
-	public static LinkedHashMap<String, String> finalRename = new LinkedHashMap<String, String>();
+	@GetMapping("/rename")
+	public String indexLaunch(HttpServletRequest request, Model model) {
 
-	private static int fileCount = 0;
-	private static int folderCount = 0;
-	private static int handledCount = 0;
+		fileCount = 0;
+		folderCount = 0;
+		handledCount = 0;
 
-	public static void main(String[] args) {
+		startVisit(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
+		renameFiles();
 
-		if (enableMainMethod) {
+		model.addAttribute("TOTAL_FILES_VISITED", Integer.valueOf(fileCount));
+		model.addAttribute("TOTAL_FILES_HANDLED", Integer.valueOf(handledCount));
+		model.addAttribute("FILE_TYPES_HANDLED", filetypes);
 
-			startVisit(renameFolder);
-			renameFiles();
-			LOGGER.info("Total files visited = " + fileCount);
-			LOGGER.info("Total files handled = " + handledCount);
-			LOGGER.info("File Types = " + filetypes);
-
-		}
-
+		return "index_rename";
 	}
 
-	public static void startVisit(String filePath) {
-		visitFiles(Paths.get(filePath));
+	private void startVisit(Path path) {
+		visitFiles(path);
 	}
 
-	private static void visitFiles(Path path) {
+	private void visitFiles(Path path) {
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
 			for (Path entry : stream) {
 				if (entry.toFile().isDirectory()) {
@@ -65,7 +71,7 @@ public class MemeRenamer {
 		}
 	}
 
-	public static void visitFileCode(String filePath) {
+	private void visitFileCode(String filePath) {
 
 		String[] fileParts = filePath.split("\\\\");
 
@@ -82,7 +88,7 @@ public class MemeRenamer {
 			folderCount = 1;
 		}
 
-		String newFileNameToUse = filePrefixNew + "_" + getFileDateTime(folderCount) + "."
+		String newFileNameToUse = filePrefixNew + "_" + MemeFilerLibrary.getFileDateTime(folderCount) + "."
 				+ nFileExtension.toLowerCase();
 		if (!nFileExtension.toLowerCase().equals("ini") && !nFileExtension.toLowerCase().equals("db")) {
 
@@ -94,7 +100,7 @@ public class MemeRenamer {
 
 	}
 
-	private static void renameFiles() {
+	private void renameFiles() {
 
 		for (Map.Entry<String, String> set : finalRename.entrySet()) {
 
@@ -104,11 +110,11 @@ public class MemeRenamer {
 			LOGGER.info(" Copied from: " + filePath + " to: " + targetFile);
 
 			try {
-				MemeFilerController.copyFile(filePath, targetFile);
+				MemeFilerLibrary.copyFile(filePath, targetFile);
 				fileCount++;
 
 				try {
-					MemeFilerController.deleteFile(filePath, false);
+					MemeFilerLibrary.deleteFile(filePath, false);
 					handledCount++;
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -122,24 +128,6 @@ public class MemeRenamer {
 
 		}
 
-	}
-
-	private static String getFileDateTime(int fileNumber) {
-		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
-		return oDateFormatter.format(new Date()) + padLeftZeros(Integer.toString(fileNumber), 4);
-	}
-
-	public static String padLeftZeros(String inputString, int length) {
-		if (inputString.length() >= length) {
-			return inputString;
-		}
-		StringBuilder sb = new StringBuilder();
-		while (sb.length() < length - inputString.length()) {
-			sb.append('0');
-		}
-		sb.append(inputString);
-
-		return sb.toString();
 	}
 
 }

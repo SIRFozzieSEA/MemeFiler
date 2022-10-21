@@ -1,0 +1,74 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<title>MemeFiler</title>
+<style type="text/css">
+
+a {
+	color: #000000;
+	text-decoration: none
+}
+
+a:visited {
+	color: #000000;
+	text-decoration: none
+}
+
+a:active {
+	color: #000000;
+	text-decoration: none
+}
+
+a:hover {
+	color: red;
+	text-decoration: none
+}
+
+.center-div {
+	text-align: center;
+}
+
+.page-header {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: x-large;
+}
+
+.small-text {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: small;
+}
+
+.done-message {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: 36pt;
+	color: red;
+}
+
+.restart-link {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: medium;
+}
+
+
+
+</style>
+</head>
+
+<body>
+	
+	<br>
+	<br>
+		<div class="center-div">
+			<span class="page-header"><strong>MemeRenamer</strong></span><BR>
+			<span class="small-text" th:text="'Total Files Visited: ' + ${TOTAL_FILES_VISITED}"></span><BR>
+			<span class="small-text" th:text="'Total Files Handled: ' + ${TOTAL_FILES_HANDLED}"></span><BR>
+			<span class="small-text" th:text="'File Types Handled: ' + ${FILE_TYPES_HANDLED}"></span><BR>
+		</div>
+	<br>
+	
+	
+</body>
+
+</html>
