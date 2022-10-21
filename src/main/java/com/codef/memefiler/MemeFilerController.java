@@ -231,11 +231,11 @@ public class MemeFilerController {
 		}
 	}
 
-	private void copyFile(String _sTargetFile, String _sDestinationFile) throws IOException {
+	public static void copyFile(String _sTargetFile, String _sDestinationFile) throws IOException {
 		Files.copy(new File(_sTargetFile).toPath(), new File(_sDestinationFile).toPath());
 	}
 
-	private void deleteFile(String _sPath, boolean _bLogEvent) {
+	public static void deleteFile(String _sPath, boolean _bLogEvent) {
 		File oFile = new File(_sPath);
 		if (oFile.exists()) {
 			if (_bLogEvent) {
