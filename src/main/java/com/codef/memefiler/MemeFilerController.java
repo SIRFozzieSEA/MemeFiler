@@ -139,6 +139,10 @@ public class MemeFilerController {
 	}
 
 	private void visitFolderCode(String filePath) {
+		int noOfFileInPath = new File(filePath).list().length;
+		if (noOfFileInPath > 50) {
+			System.out.println(filePath.replaceAll("\\\\", "/") + " --> " + noOfFileInPath);
+		}
 		folderPaths.add(filePath.replaceAll("\\\\", "/"));
 	}
 
