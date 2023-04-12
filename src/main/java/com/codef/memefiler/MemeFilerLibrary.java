@@ -10,12 +10,12 @@ import java.util.Date;
 
 import javax.imageio.ImageIO;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MemeFilerLibrary {
 
-	private static final Logger LOGGER = LogManager.getLogger(MemeFilerLibrary.class.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(MemeFilerLibrary.class);
 
 	public static String getFileDateTime(int fileNumber) {
 		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");

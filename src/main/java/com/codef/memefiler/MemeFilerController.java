@@ -12,10 +12,9 @@ import java.util.List;
 import java.util.TreeSet;
 
 import javax.activation.FileTypeMap;
-import javax.servlet.http.HttpServletRequest;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
@@ -26,10 +25,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Controller
 public class MemeFilerController {
 
-	private static final Logger LOGGER = LogManager.getLogger(MemeFilerController.class.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(MemeFilerController.class);
 
 	@Autowired
 	private Environment env;
@@ -141,7 +142,7 @@ public class MemeFilerController {
 	private void visitFolderCode(String filePath) {
 		int noOfFileInPath = new File(filePath).list().length;
 		if (noOfFileInPath > 50) {
-			System.out.println(filePath.replaceAll("\\\\", "/") + " --> " + noOfFileInPath);
+			LOGGER.debug(filePath.replaceAll("\\\\", "/") + " --> " + noOfFileInPath);
 		}
 		folderPaths.add(filePath.replaceAll("\\\\", "/"));
 	}

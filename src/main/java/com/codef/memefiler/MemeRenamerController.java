@@ -10,20 +10,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Controller
 public class MemeRenamerController {
 
-	private static final Logger LOGGER = LogManager.getLogger(MemeRenamerController.class.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(MemeRenamerController.class);
 
 	private Set<String> folderSet = new TreeSet<>();
 	private TreeSet<String> filetypes = new TreeSet<String>();
