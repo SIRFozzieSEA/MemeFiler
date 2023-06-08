@@ -1,0 +1,1 @@
+start javaw -jar ..\..\memefiler-0.0.1-SNAPSHOT.jar
