@@ -6,8 +6,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -24,6 +27,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.codef.xsalt.utils.XSaLTFileSystemUtils;
+import com.codef.xsalt.utils.XSaLTGraphicTools;
+import com.codef.xsalt.utils.XSaLTStringUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -185,7 +192,7 @@ public class MemeFilerController {
 
 			String newMemeName = targetPath + "/"
 					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_"
-					+ MemeFilerLibrary.getFileDateTime(totalCount);
+					+ getFileDateTime(totalCount);
 
 			try {
 
@@ -193,29 +200,29 @@ public class MemeFilerController {
 
 				case "webp":
 					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					MemeFilerLibrary.scaleFile(sourcePathFull, newMemeName);
+					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
 					break;
 
 				case "jfif":
 					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					MemeFilerLibrary.scaleFile(sourcePathFull, newMemeName);
+					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
 					break;
 
 				case "jpeg":
 					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					MemeFilerLibrary.copyFile(sourcePathFull, newMemeName);
+					XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
 					break;
 
 				default:
 					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					MemeFilerLibrary.copyFile(sourcePathFull, newMemeName);
+					XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
 				}
 
 				LOGGER.info("   Copied from: " + sourcePathFull + " to: " + newMemeName);
 				totalCount = totalCount + 1;
 
 				try {
-					MemeFilerLibrary.deleteFile(sourcePathFull, false);
+					XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
 					LOGGER.info("       Deleted: " + sourcePathFull + " to: " + newMemeName);
 				} catch (Exception e) {
 					LOGGER.info(" Cannot Delete: " + sourcePathFull + " to: " + newMemeName);
@@ -236,7 +243,7 @@ public class MemeFilerController {
 
 		if (fileMeme != null) {
 
-			String fileMemeFullPath = MemeFilerLibrary.replaceBackSlashes(fileMeme.getAbsolutePath());
+			String fileMemeFullPath = replaceBackSlashes(fileMeme.getAbsolutePath());
 			String fileMemeName = fileMeme.getName();
 			String fileMemeExtension = fileMemeName.split("\\.")[1];
 
@@ -253,6 +260,15 @@ public class MemeFilerController {
 			model.addAttribute("fileTypes", filetypes.toString());
 
 		}
+	}
+	
+	private String replaceBackSlashes(String input) {
+		return input.replaceAll("\\\\", "\\/");
+	}
+	
+	private String getFileDateTime(int fileNumber) {
+		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
+		return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
 	}
 
 }

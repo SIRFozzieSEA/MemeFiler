@@ -5,6 +5,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +20,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import com.codef.xsalt.utils.XSaLTFileSystemUtils;
+import com.codef.xsalt.utils.XSaLTStringUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -88,7 +94,7 @@ public class MemeRenamerController {
 			folderCount = 1;
 		}
 
-		String newFileNameToUse = filePrefixNew + "_" + MemeFilerLibrary.getFileDateTime(folderCount) + "."
+		String newFileNameToUse = filePrefixNew + "_" + getFileDateTime(folderCount) + "."
 				+ nFileExtension.toLowerCase();
 		if (!nFileExtension.toLowerCase().equals("ini") && !nFileExtension.toLowerCase().equals("db")) {
 
@@ -110,11 +116,11 @@ public class MemeRenamerController {
 			LOGGER.info(" Copied from: " + filePath + " to: " + targetFile);
 
 			try {
-				MemeFilerLibrary.copyFile(filePath, targetFile);
+				XSaLTFileSystemUtils.copyFile(filePath, targetFile);
 				fileCount++;
 
 				try {
-					MemeFilerLibrary.deleteFile(filePath, false);
+					XSaLTFileSystemUtils.deleteFileNew(filePath);
 					handledCount++;
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -129,5 +135,11 @@ public class MemeRenamerController {
 		}
 
 	}
+	
+	private String getFileDateTime(int fileNumber) {
+		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
+		return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
+	}
+	
 
 }
