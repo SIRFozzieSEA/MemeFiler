@@ -37,6 +37,10 @@ import jakarta.servlet.http.HttpServletRequest;
 @Controller
 public class MemeFilerController {
 
+	private static final String SOURCE_PATH_FULL = "sourcePathFull";
+
+	private static final String SOURCE_EXTENSION = "sourceExtension";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MemeFilerController.class);
 
 	@Autowired
@@ -44,10 +48,10 @@ public class MemeFilerController {
 
 	private boolean folderPathsInitialized = false;
 	private int fileMemeIndex = 0;
-	private List<File> fileMemes = new ArrayList<File>();
+	private List<File> fileMemes = new ArrayList<>();
 
-	private TreeSet<String> folderPaths = new TreeSet<String>();
-	private TreeSet<String> filetypes = new TreeSet<String>();
+	private TreeSet<String> folderPaths = new TreeSet<>();
+	private TreeSet<String> filetypes = new TreeSet<>();
 
 	private int totalCount = 1;
 
@@ -148,10 +152,11 @@ public class MemeFilerController {
 
 	private void visitFolderCode(String filePath) {
 		int noOfFileInPath = new File(filePath).list().length;
+		String cleanFilePath = filePath.replace("\\\\", "/");
 		if (noOfFileInPath > 50) {
-			LOGGER.debug(filePath.replaceAll("\\\\", "/") + " --> " + noOfFileInPath);
+			LOGGER.debug("{} ---> {}", cleanFilePath, noOfFileInPath);
 		}
-		folderPaths.add(filePath.replaceAll("\\\\", "/"));
+		folderPaths.add(cleanFilePath);
 	}
 
 	private File getNextImageSourcePath() {
@@ -166,8 +171,8 @@ public class MemeFilerController {
 
 		fileMemeIndex = fileMemeIndex + 1;
 
-		String sourcePathFull = request.getParameter("sourcePathFull");
-		String originalSourceExtension = request.getParameter("sourceExtension").toLowerCase();
+		String sourcePathFull = request.getParameter(SOURCE_PATH_FULL);
+		String originalSourceExtension = request.getParameter(SOURCE_EXTENSION).toLowerCase();
 		String targetPath = request.getParameter("targetPath");
 		String targetSourceExtension = originalSourceExtension;
 
@@ -190,9 +195,8 @@ public class MemeFilerController {
 				targetSourceExtension = "jpg";
 			}
 
-			String newMemeName = targetPath + "/"
-					+ folderParts[folderParts.length - 1].toLowerCase().replaceAll(" ", "_") + "_"
-					+ getFileDateTime(totalCount);
+			String newMemeName = targetPath + "/" + folderParts[folderParts.length - 1].toLowerCase().replace(" ", "_")
+					+ "_" + getFileDateTime(totalCount);
 
 			try {
 
@@ -204,8 +208,9 @@ public class MemeFilerController {
 					break;
 
 				case "jfif":
+					// handle this like a jpg
 					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
+					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
 					break;
 
 				case "jpeg":
@@ -218,24 +223,27 @@ public class MemeFilerController {
 					XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
 				}
 
-				LOGGER.info("   Copied from: " + sourcePathFull + " to: " + newMemeName);
+				LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
 				totalCount = totalCount + 1;
-
-				try {
-					XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
-					LOGGER.info("       Deleted: " + sourcePathFull + " to: " + newMemeName);
-				} catch (Exception e) {
-					LOGGER.info(" Cannot Delete: " + sourcePathFull + " to: " + newMemeName);
-				}
+				tryDelete(sourcePathFull, newMemeName);
 
 			} catch (IOException e) {
-				LOGGER.info(" Error copying: " + sourcePathFull + " to: " + newMemeName);
+				LOGGER.info(" Error copying: {} to {}", sourcePathFull, newMemeName);
 			}
 
 		} else {
 			LOGGER.error("Done or skipped.");
 		}
 
+	}
+
+	private void tryDelete(String sourcePathFull, String newMemeName) {
+		try {
+			XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
+			LOGGER.info("       Deleted: {} to {}", sourcePathFull, newMemeName);
+		} catch (Exception e) {
+			LOGGER.info(" Cannot Delete: {} to {}", sourcePathFull, newMemeName);
+		}
 	}
 
 	private void attachMeme(Model model) {
@@ -247,28 +255,29 @@ public class MemeFilerController {
 			String fileMemeName = fileMeme.getName();
 			String fileMemeExtension = fileMemeName.split("\\.")[1];
 
-			model.addAttribute("sourcePathFull", fileMemeFullPath);
-			model.addAttribute("sourceExtension", fileMemeExtension);
+			model.addAttribute(SOURCE_PATH_FULL, fileMemeFullPath);
+			model.addAttribute(SOURCE_EXTENSION, fileMemeExtension);
 			model.addAttribute("folderPaths", folderPaths);
 			model.addAttribute("fileTypes", filetypes.toString());
 
 		} else {
 
-			model.addAttribute("sourcePathFull", "");
-			model.addAttribute("sourceExtension", "");
+			model.addAttribute(SOURCE_PATH_FULL, "");
+			model.addAttribute(SOURCE_EXTENSION, "");
 			model.addAttribute("folderPaths", folderPaths);
 			model.addAttribute("fileTypes", filetypes.toString());
 
 		}
 	}
-	
+
 	private String replaceBackSlashes(String input) {
-		return input.replaceAll("\\\\", "\\/");
+		return input.replace("\\\\", "\\/");
 	}
-	
+
 	private String getFileDateTime(int fileNumber) {
 		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
-		return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
+		return oDateFormatter.format(new Date())
+				+ XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
 	}
 
 }

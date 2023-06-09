@@ -32,8 +32,8 @@ public class MemeRenamerController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MemeRenamerController.class);
 
 	private Set<String> folderSet = new TreeSet<>();
-	private TreeSet<String> filetypes = new TreeSet<String>();
-	private LinkedHashMap<String, String> finalRename = new LinkedHashMap<String, String>();
+	private TreeSet<String> filetypes = new TreeSet<>();
+	private LinkedHashMap<String, String> finalRename = new LinkedHashMap<>();
 
 	private int fileCount = 0;
 	private int folderCount = 0;
@@ -83,7 +83,7 @@ public class MemeRenamerController {
 
 		String folderName = fileParts[fileParts.length - 2];
 		String fileName = fileParts[fileParts.length - 1];
-		String filePrefixNew = folderName.toLowerCase().replaceAll(" ", "_");
+		String filePrefixNew = folderName.toLowerCase().replace(" ", "_");
 		String[] fileNameNew = fileName.split("\\.");
 		String nFileExtension = fileNameNew[fileNameNew.length - 1];
 
@@ -96,7 +96,7 @@ public class MemeRenamerController {
 
 		String newFileNameToUse = filePrefixNew + "_" + getFileDateTime(folderCount) + "."
 				+ nFileExtension.toLowerCase();
-		if (!nFileExtension.toLowerCase().equals("ini") && !nFileExtension.toLowerCase().equals("db")) {
+		if (!nFileExtension.equalsIgnoreCase("ini") && !nFileExtension.equalsIgnoreCase("db")) {
 
 			String targetFile = filePath.replace(fileName, newFileNameToUse);
 			finalRename.put(filePath, targetFile);
@@ -113,33 +113,28 @@ public class MemeRenamerController {
 			String filePath = set.getKey();
 			String targetFile = set.getValue();
 
-			LOGGER.info(" Copied from: " + filePath + " to: " + targetFile);
+			LOGGER.info(" Copied from: {} to {}", filePath, targetFile);
 
 			try {
 				XSaLTFileSystemUtils.copyFile(filePath, targetFile);
 				fileCount++;
 
-				try {
-					XSaLTFileSystemUtils.deleteFileNew(filePath);
-					handledCount++;
-				} catch (Exception e) {
-					e.printStackTrace();
-					LOGGER.info(" Cannot Delete: " + filePath);
-				}
+				XSaLTFileSystemUtils.deleteFileNew(filePath);
+				handledCount++;
 
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				LOGGER.info(" Error handling: " + filePath + " to: " + targetFile);
+				LOGGER.info(" Error handling: {} to {}", filePath, targetFile);
 			}
 
 		}
 
 	}
-	
+
 	private String getFileDateTime(int fileNumber) {
 		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
-		return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
+		return oDateFormatter.format(new Date())
+				+ XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
 	}
-	
 
 }
