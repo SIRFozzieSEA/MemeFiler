@@ -152,9 +152,9 @@ public class MemeFilerController {
 
 	private void visitFolderCode(String filePath) {
 		int noOfFileInPath = new File(filePath).list().length;
-		String cleanFilePath = filePath.replace("\\\\", "/");
+		String cleanFilePath = filePath.replace("\\", "/");
 		if (noOfFileInPath > 50) {
-			LOGGER.debug("{} ---> {}", cleanFilePath, noOfFileInPath);
+			LOGGER.info("{} ---> {}", cleanFilePath, noOfFileInPath);
 		}
 		folderPaths.add(cleanFilePath);
 	}
@@ -251,7 +251,7 @@ public class MemeFilerController {
 
 		if (fileMeme != null) {
 
-			String fileMemeFullPath = replaceBackSlashes(fileMeme.getAbsolutePath());
+			String fileMemeFullPath = fileMeme.getAbsolutePath().replace("\\", "/");
 			String fileMemeName = fileMeme.getName();
 			String fileMemeExtension = fileMemeName.split("\\.")[1];
 
@@ -268,10 +268,6 @@ public class MemeFilerController {
 			model.addAttribute("fileTypes", filetypes.toString());
 
 		}
-	}
-
-	private String replaceBackSlashes(String input) {
-		return input.replace("\\\\", "\\/");
 	}
 
 	private String getFileDateTime(int fileNumber) {
