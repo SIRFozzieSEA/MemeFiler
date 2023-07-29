@@ -82,9 +82,14 @@ a:hover {
 				</div>
 				<div th:unless="${sourcePathFull == ''}">
 
-					<div th:switch="${#strings.substring(sourcePathFull, #strings.length(sourcePathFull) - 4)}">
+					<div th:switch="${#strings.substring(sourcePathFull, #strings.length(sourcePathFull) - 3)}">
 					  
-						<div th:case="'webm'" class="center-div">
+						<div th:case="'ebm'" class="center-div">
+							<video controls width="600"><source th:src="'/getImage?imageName=' + ${sourcePathFull}" type="video/webm"></video>
+							<BR><span class="small-text" th:text="${sourcePathFull}"></span>
+						</div>
+						
+						<div th:case="'mp4'" class="center-div">
 							<video controls width="600"><source th:src="'/getImage?imageName=' + ${sourcePathFull}" type="video/webm"></video>
 							<BR><span class="small-text" th:text="${sourcePathFull}"></span>
 						</div>
