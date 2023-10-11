@@ -148,6 +148,9 @@ public class MemeFilerController {
 		} catch (IOException e) {
 			LOGGER.error(e.toString(), e);
 		}
+		
+		folderPaths.add("DELETE");
+		folderPaths.add((System.getProperty("user.home") + "/Desktop").replace("\\", "/"));
 	}
 
 	private void visitFolderCode(String filePath) {
@@ -199,33 +202,45 @@ public class MemeFilerController {
 					+ "_" + getFileDateTime(totalCount);
 
 			try {
+				
+				if (targetPath.equalsIgnoreCase("delete")) {
+					
+					totalCount = totalCount + 1;
+					tryDelete(sourcePathFull);
+					
+				} else {
+					
+					switch (originalSourceExtension) {
 
-				switch (originalSourceExtension) {
+					case "webp":
+						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+						XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
+						break;
 
-				case "webp":
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
-					break;
+					case "jfif":
+						// handle this like a jpg
+						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+						XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
+						break;
 
-				case "jfif":
-					// handle this like a jpg
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
-					break;
+					case "jpeg":
+						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+						XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
+						break;
 
-				case "jpeg":
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
-					break;
+					default:
+						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+						XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
+					}
 
-				default:
-					newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-					XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
+					LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
+					totalCount = totalCount + 1;
+					tryDelete(sourcePathFull);
+					
 				}
+				
 
-				LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
-				totalCount = totalCount + 1;
-				tryDelete(sourcePathFull, newMemeName);
+
 
 			} catch (IOException e) {
 				LOGGER.info(" Error copying: {} to {}", sourcePathFull, newMemeName);
@@ -237,12 +252,12 @@ public class MemeFilerController {
 
 	}
 
-	private void tryDelete(String sourcePathFull, String newMemeName) {
+	private void tryDelete(String sourcePathFull) {
 		try {
 			XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
-			LOGGER.info("       Deleted: {} to {}", sourcePathFull, newMemeName);
+			LOGGER.info("       Deleted: {}", sourcePathFull);
 		} catch (Exception e) {
-			LOGGER.info(" Cannot Delete: {} to {}", sourcePathFull, newMemeName);
+			LOGGER.info(" Cannot Delete: {}", sourcePathFull);
 		}
 	}
 
