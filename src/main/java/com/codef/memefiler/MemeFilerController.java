@@ -1,21 +1,9 @@
 package com.codef.memefiler;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.TreeSet;
-
-import javax.activation.FileTypeMap;
-
+import com.codef.xsalt.utils.XSaLTFileSystemUtils;
+import com.codef.xsalt.utils.XSaLTGraphicTools;
+import com.codef.xsalt.utils.XSaLTStringUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,274 +16,274 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.codef.xsalt.utils.XSaLTFileSystemUtils;
-import com.codef.xsalt.utils.XSaLTGraphicTools;
-import com.codef.xsalt.utils.XSaLTStringUtils;
-
-import jakarta.servlet.http.HttpServletRequest;
+import javax.activation.FileTypeMap;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Controller
 public class MemeFilerController {
 
-	private static final String SOURCE_PATH_FULL = "sourcePathFull";
+    private static final String SOURCE_PATH_FULL = "sourcePathFull";
 
-	private static final String SOURCE_EXTENSION = "sourceExtension";
+    private static final String SOURCE_EXTENSION = "sourceExtension";
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MemeFilerController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MemeFilerController.class);
 
-	@Autowired
-	private Environment env;
+    @Autowired
+    private Environment env;
 
-	private boolean folderPathsInitialized = false;
-	private int fileMemeIndex = 0;
-	private List<File> fileMemes = new ArrayList<>();
+    private boolean folderPathsInitialized = false;
+    private int fileMemeIndex = 0;
+    private List<File> fileMemes = new ArrayList<>();
 
-	private TreeSet<String> folderPaths = new TreeSet<>();
-	private TreeSet<String> filetypes = new TreeSet<>();
+    private final TreeSet<String> folderPaths = new TreeSet<>();
+    private final TreeSet<String> filetypes = new TreeSet<>();
 
-	private int totalCount = 1;
+    private int totalCount = 1;
 
-	@GetMapping("/")
-	public String indexLaunch(HttpServletRequest request, Model model) {
+    @GetMapping("/")
+    public String indexLaunch(HttpServletRequest request, Model model) {
 
-		if (request.getParameter("restart") != null) {
-			folderPathsInitialized = false;
-		}
+        if (request.getParameter("restart") != null) {
+            folderPathsInitialized = false;
+        }
 
-		if (!folderPathsInitialized) {
-			initializeApp();
-			checkFileTypes();
-			folderPathsInitialized = true;
-		}
-		attachMeme(model);
-		return "index";
-	}
+        if (!folderPathsInitialized) {
+            initializeApp();
+            checkFileTypes();
+            folderPathsInitialized = true;
+        }
+        attachMeme(model);
+        return "index";
+    }
 
-	@PostMapping("/")
-	public String indexPost(HttpServletRequest request, Model model) {
+    @PostMapping("/")
+    public String indexPost(HttpServletRequest request, Model model) {
 
-		handleMeme(request);
-		attachMeme(model);
-		return "index";
-	}
+        handleMeme(request);
+        attachMeme(model);
+        return "index";
+    }
 
-	@GetMapping("/getImage")
-	public ResponseEntity<byte[]> getImage(@RequestParam(name = "imageName", required = true) String imageName) {
-		try {
-			File img = new File(imageName);
-			return ResponseEntity.ok()
-					.contentType(MediaType.valueOf(FileTypeMap.getDefaultFileTypeMap().getContentType(img)))
-					.body(Files.readAllBytes(img.toPath()));
-		} catch (IOException e) {
-			return null;
-		}
-	}
+    @GetMapping("/getImage")
+    public ResponseEntity<byte[]> getImage(@RequestParam(name = "imageName", required = true) String imageName) {
+        try {
+            File img = new File(imageName);
+            return ResponseEntity.ok().contentType(MediaType.valueOf(FileTypeMap.getDefaultFileTypeMap().getContentType(img))).body(Files.readAllBytes(img.toPath()));
+        } catch (IOException e) {
+            return null;
+        }
+    }
 
-	// ---------------------------------------------------------
+    // ---------------------------------------------------------
 
-	private void initializeApp() {
+    private void initializeApp() {
 
-		totalCount = 1;
+        totalCount = 1;
 
-		visitFolders(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
+        visitFolders(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
 
-		File directory = new File(env.getProperty("MEME_SORT_FOLDER"));
-		if (!directory.exists()) {
-			LOGGER.error("MEME_SORT_FOLDER does not exist");
-		} else {
-			fileMemes = Arrays.asList(directory.listFiles());
-			fileMemeIndex = 0;
-		}
-	}
+        File directory = new File(env.getProperty("MEME_SORT_FOLDER"));
+        if (!directory.exists()) {
+            LOGGER.error("MEME_SORT_FOLDER does not exist");
+        } else {
+            fileMemes = Arrays.asList(directory.listFiles());
+            fileMemeIndex = 0;
+        }
+    }
 
-	private void checkFileTypes() {
-		visitFiles(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
-	}
+    private void checkFileTypes() {
+        visitFiles(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
+    }
 
-	private void visitFiles(Path path) {
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-			for (Path entry : stream) {
-				if (entry.toFile().isDirectory()) {
-					visitFiles(entry);
-				} else {
-					visitFileCode(entry.toString());
-				}
-			}
-		} catch (IOException e) {
-			LOGGER.error(e.toString(), e);
-		}
-	}
+    private void visitFiles(Path path) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            for (Path entry : stream) {
+                if (entry.toFile().isDirectory()) {
+                    visitFiles(entry);
+                } else {
+                    visitFileCode(entry.toString());
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.toString(), e);
+        }
+    }
 
-	private void visitFileCode(String filePath) {
+    private void visitFileCode(String filePath) {
 
-		String[] fileParts = filePath.split("\\\\");
-		String fileName = fileParts[fileParts.length - 1];
-		String[] fileNameNew = fileName.split("\\.");
-		String nFileExtension = fileNameNew[fileNameNew.length - 1];
+        String[] fileParts = filePath.split("\\\\");
+        String fileName = fileParts[fileParts.length - 1];
+        String[] fileNameNew = fileName.split("\\.");
+        String nFileExtension = fileNameNew[fileNameNew.length - 1];
 
-		filetypes.add(nFileExtension);
+        filetypes.add(nFileExtension);
 
-	}
+    }
 
-	private void visitFolders(Path path) {
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-			for (Path entry : stream) {
-				if (entry.toFile().isDirectory()) {
-					visitFolderCode(entry.toString());
-					visitFolders(entry);
-				}
-			}
-		} catch (IOException e) {
-			LOGGER.error(e.toString(), e);
-		}
+    private void visitFolders(Path path) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            for (Path entry : stream) {
+                if (entry.toFile().isDirectory()) {
+                    visitFolderCode(entry.toString());
+                    visitFolders(entry);
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.toString(), e);
+        }
 
-		folderPaths.add("DELETE");
-		folderPaths.add((System.getProperty("user.home") + "/Desktop").replace("\\", "/"));
-	}
+        folderPaths.add("DELETE");
+        folderPaths.add((System.getProperty("user.home") + "/Desktop").replace("\\", "/"));
+    }
 
-	private void visitFolderCode(String filePath) {
-		int noOfFileInPath = new File(filePath).list().length;
-		String cleanFilePath = filePath.replace("\\", "/");
-		if (noOfFileInPath > 50) {
-			LOGGER.info("{} ---> {}", cleanFilePath, noOfFileInPath);
-		}
-		folderPaths.add(cleanFilePath);
-	}
+    private void visitFolderCode(String filePath) {
+        int noOfFileInPath = new File(filePath).list().length;
+        String cleanFilePath = filePath.replace("\\", "/");
+        if (noOfFileInPath > 50) {
+            LOGGER.info("{} ---> {}", cleanFilePath, noOfFileInPath);
+        }
+        folderPaths.add(cleanFilePath);
+    }
 
-	private File getNextImageSourcePath() {
-		try {
-			return fileMemes.get(fileMemeIndex);
-		} catch (Exception e) {
-			return null;
-		}
-	}
+    private File getNextImageSourcePath() {
+        try {
+            return fileMemes.get(fileMemeIndex);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-	private void handleMeme(HttpServletRequest request) {
+    private void handleMeme(HttpServletRequest request) {
 
-		fileMemeIndex = fileMemeIndex + 1;
+        fileMemeIndex = fileMemeIndex + 1;
 
-		String sourcePathFull = request.getParameter(SOURCE_PATH_FULL);
-		String originalSourceExtension = request.getParameter(SOURCE_EXTENSION).toLowerCase();
-		String targetPath = request.getParameter("targetPath");
-		String targetSourceExtension = originalSourceExtension;
+        String sourcePathFull = request.getParameter(SOURCE_PATH_FULL);
+        String originalSourceExtension = request.getParameter(SOURCE_EXTENSION).toLowerCase();
+        String targetPath = request.getParameter("targetPath");
+        String targetSourceExtension = originalSourceExtension;
 
-		if (targetPath.length() > 0 && sourcePathFull.length() > 0) {
+        if (!targetPath.isEmpty() && !sourcePathFull.isEmpty()) {
 
-			String[] folderParts = targetPath.split("\\/");
+            String[] folderParts = targetPath.split("/");
 
-			// rename JPEG to JPG
-			if (originalSourceExtension.equals("jpeg")) {
-				targetSourceExtension = "jpg";
-			}
+            // rename JPEG to JPG
+            if (originalSourceExtension.equals("jpeg")) {
+                targetSourceExtension = "jpg";
+            }
 
-			// convert WEBP to JPEG
-			if (originalSourceExtension.equals("webp")) {
-				targetSourceExtension = "jpg";
-			}
+            // convert WEBP to JPEG
+            if (originalSourceExtension.equals("webp")) {
+                targetSourceExtension = "jpg";
+            }
 
-			// convert JFIF to JPEG
-			if (originalSourceExtension.equals("jfif")) {
-				targetSourceExtension = "jpg";
-			}
+            // convert JFIF to JPEG
+            if (originalSourceExtension.equals("jfif")) {
+                targetSourceExtension = "jpg";
+            }
 
-			String newMemeName = targetPath + "/" + folderParts[folderParts.length - 1].toLowerCase().replace(" ", "_")
-					+ "_" + getFileDateTime(totalCount);
+            String newMemeName = targetPath + "/" + folderParts[folderParts.length - 1].toLowerCase().replace(" ", "_") + "_" + getFileDateTime(totalCount);
 
-			try {
+            try {
 
-				if (targetPath.equalsIgnoreCase("delete")) {
+                if (targetPath.equalsIgnoreCase("delete")) {
 
-					totalCount = totalCount + 1;
-					tryDelete(sourcePathFull);
+                    totalCount = totalCount + 1;
+                    tryDelete(sourcePathFull);
 
-				} else {
+                } else {
 
-					switch (originalSourceExtension) {
+                    switch (originalSourceExtension) {
 
-					case "webp":
-						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-						XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
-						break;
+                        case "webp":
+                            newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+                            XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg", newMemeName);
+                            break;
 
-					case "jfif":
-						// handle this like a jpg
-						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-						XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
-						break;
+                        case "jfif":
+                            // handle this like a jpg
+                            newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+                            XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
+                            break;
 
-					case "jpeg":
-						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-						XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
-						break;
+                        case "jpeg":
+                            newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+                            XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
+                            break;
 
-					default:
-						newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-						XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
-					}
+                        default:
+                            newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
+                            XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
+                    }
 
-					LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
-					totalCount = totalCount + 1;
-					tryDelete(sourcePathFull);
+                    LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
+                    totalCount = totalCount + 1;
+                    tryDelete(sourcePathFull);
 
-				}
+                }
 
-			} catch (Exception e) {
-				LOGGER.error(" Error copying: {} to {}, error={}", sourcePathFull, newMemeName, e.toString());
-				renameBadFile(sourcePathFull);
-			}
+            } catch (Exception e) {
+                LOGGER.error(" Error copying: {} to {}, error={}", sourcePathFull, newMemeName, e.toString());
+                renameBadFile(sourcePathFull);
+            }
 
-		} else {
-			renameBadFile(sourcePathFull);
-			LOGGER.error("Done or skipped.");
-		}
+        } else {
+            renameBadFile(sourcePathFull);
+            LOGGER.error("Done or skipped.");
+        }
 
-	}
+    }
 
-	private void renameBadFile(String sourcePathFull) {
-		String badName = sourcePathFull.substring(0, sourcePathFull.lastIndexOf("/")) + "/XXXXX_"
-				+ sourcePathFull.substring(sourcePathFull.lastIndexOf("/") + 1, sourcePathFull.length());
-		File oldFile = new File(sourcePathFull);
-		File newFile = new File(badName);
-		oldFile.renameTo(newFile);
-	}
+    private boolean renameBadFile(String sourcePathFull) {
+        String badName = sourcePathFull.substring(0, sourcePathFull.lastIndexOf("/")) + "/XXXXX_" + sourcePathFull.substring(sourcePathFull.lastIndexOf("/") + 1);
+        File oldFile = new File(sourcePathFull);
+        File newFile = new File(badName);
+        return oldFile.renameTo(newFile);
+    }
 
-	private void tryDelete(String sourcePathFull) {
-		try {
-			XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
-			LOGGER.info("       Deleted: {}", sourcePathFull);
-		} catch (Exception e) {
-			LOGGER.info(" Cannot Delete: {}", sourcePathFull);
-		}
-	}
+    private void tryDelete(String sourcePathFull) {
+        try {
+            XSaLTFileSystemUtils.deleteFileNew(sourcePathFull);
+            LOGGER.info("       Deleted: {}", sourcePathFull);
+        } catch (Exception e) {
+            LOGGER.info(" Cannot Delete: {}", sourcePathFull);
+        }
+    }
 
-	private void attachMeme(Model model) {
-		File fileMeme = getNextImageSourcePath();
+    private void attachMeme(Model model) {
+        File fileMeme = getNextImageSourcePath();
 
-		if (fileMeme != null) {
+        if (fileMeme != null) {
 
-			String fileMemeFullPath = fileMeme.getAbsolutePath().replace("\\", "/");
-			String fileMemeName = fileMeme.getName();
-			String fileMemeExtension = fileMemeName.split("\\.")[1];
+            String fileMemeFullPath = fileMeme.getAbsolutePath().replace("\\", "/");
+            String fileMemeName = fileMeme.getName();
+            String fileMemeExtension = fileMemeName.split("\\.")[1];
 
-			model.addAttribute(SOURCE_PATH_FULL, fileMemeFullPath);
-			model.addAttribute(SOURCE_EXTENSION, fileMemeExtension);
-			model.addAttribute("folderPaths", folderPaths);
-			model.addAttribute("fileTypes", filetypes.toString());
+            model.addAttribute(SOURCE_PATH_FULL, fileMemeFullPath);
+            model.addAttribute(SOURCE_EXTENSION, fileMemeExtension);
+            model.addAttribute("folderPaths", folderPaths);
+            model.addAttribute("fileTypes", filetypes.toString());
 
-		} else {
+        } else {
 
-			model.addAttribute(SOURCE_PATH_FULL, "");
-			model.addAttribute(SOURCE_EXTENSION, "");
-			model.addAttribute("folderPaths", folderPaths);
-			model.addAttribute("fileTypes", filetypes.toString());
+            model.addAttribute(SOURCE_PATH_FULL, "");
+            model.addAttribute(SOURCE_EXTENSION, "");
+            model.addAttribute("folderPaths", folderPaths);
+            model.addAttribute("fileTypes", filetypes.toString());
 
-		}
-	}
+        }
+    }
 
-	private String getFileDateTime(int fileNumber) {
-		DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
-		return oDateFormatter.format(new Date())
-				+ XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
-	}
+    private String getFileDateTime(int fileNumber) {
+        DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
+        return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
+    }
 
 }
