@@ -148,7 +148,7 @@ public class MemeFilerController {
 		} catch (IOException e) {
 			LOGGER.error(e.toString(), e);
 		}
-		
+
 		folderPaths.add("DELETE");
 		folderPaths.add((System.getProperty("user.home") + "/Desktop").replace("\\", "/"));
 	}
@@ -202,14 +202,14 @@ public class MemeFilerController {
 					+ "_" + getFileDateTime(totalCount);
 
 			try {
-				
+
 				if (targetPath.equalsIgnoreCase("delete")) {
-					
+
 					totalCount = totalCount + 1;
 					tryDelete(sourcePathFull);
-					
+
 				} else {
-					
+
 					switch (originalSourceExtension) {
 
 					case "webp":
@@ -236,20 +236,27 @@ public class MemeFilerController {
 					LOGGER.info("   Copied from: {} to {}", sourcePathFull, newMemeName);
 					totalCount = totalCount + 1;
 					tryDelete(sourcePathFull);
-					
+
 				}
-				
 
-
-
-			} catch (IOException e) {
-				LOGGER.info(" Error copying: {} to {}", sourcePathFull, newMemeName);
+			} catch (Exception e) {
+				LOGGER.error(" Error copying: {} to {}, error={}", sourcePathFull, newMemeName, e.toString());
+				renameBadFile(sourcePathFull);
 			}
 
 		} else {
+			renameBadFile(sourcePathFull);
 			LOGGER.error("Done or skipped.");
 		}
 
+	}
+
+	private void renameBadFile(String sourcePathFull) {
+		String badName = sourcePathFull.substring(0, sourcePathFull.lastIndexOf("/")) + "/XXXXX_"
+				+ sourcePathFull.substring(sourcePathFull.lastIndexOf("/") + 1, sourcePathFull.length());
+		File oldFile = new File(sourcePathFull);
+		File newFile = new File(badName);
+		oldFile.renameTo(newFile);
 	}
 
 	private void tryDelete(String sourcePathFull) {
