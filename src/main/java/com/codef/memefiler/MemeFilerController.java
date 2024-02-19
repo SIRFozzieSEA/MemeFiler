@@ -172,6 +172,7 @@ public class MemeFilerController {
 
         if (!targetPath.isEmpty() && !sourcePathFull.isEmpty()) {
 
+            // Come back and make sure this works
             String[] folderParts = targetPath.split("/");
 
             // rename JPEG to JPG
@@ -213,12 +214,8 @@ public class MemeFilerController {
                             XSaLTGraphicTools.scaleImageFile(sourcePathFull, "jpg".toLowerCase(), newMemeName);
                             break;
 
-                        case "jpeg":
-                            newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
-                            XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
-                            break;
-
                         default:
+                            // this assumes JPEG/JPG is the default
                             newMemeName = newMemeName + "." + targetSourceExtension.toLowerCase();
                             XSaLTFileSystemUtils.copyFile(sourcePathFull, newMemeName);
                     }
@@ -241,11 +238,11 @@ public class MemeFilerController {
 
     }
 
-    private boolean renameBadFile(String sourcePathFull) {
+    private void renameBadFile(String sourcePathFull) {
         String badName = sourcePathFull.substring(0, sourcePathFull.lastIndexOf("/")) + "/XXXXX_" + sourcePathFull.substring(sourcePathFull.lastIndexOf("/") + 1);
         File oldFile = new File(sourcePathFull);
         File newFile = new File(badName);
-        return oldFile.renameTo(newFile);
+        oldFile.renameTo(newFile);
     }
 
     private void tryDelete(String sourcePathFull) {
