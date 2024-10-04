@@ -110,7 +110,7 @@ a:hover {
 			<td class="center-div">
 				<input style="width: 400px" autocomplete="off" name="targetPath" id="targetPath" list="dataFolder">
 				<datalist id="dataFolder">
-				    <option th:each="folder : ${folderPaths}" th:value="${folder}" th:text="${folder}">
+				    <option th:each="folder : ${folderPaths}" th:value="${folder}" th:text="${folder}"></option>
 				</datalist> 	
 				<input name="Submit1" type="submit" value="Submit" />
 			</td>
