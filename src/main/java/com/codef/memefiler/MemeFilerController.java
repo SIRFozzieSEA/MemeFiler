@@ -83,18 +83,18 @@ public class MemeFilerController {
     }
 
     // ---------------------------------------------------------
-
+    
     private void initializeApp() {
 
         totalCount = 1;
-
+        
         visitFolders(Paths.get(env.getProperty("MEME_TARGET_FOLDER")));
 
         File directory = new File(env.getProperty("MEME_SORT_FOLDER"));
         if (!directory.exists()) {
             LOGGER.error("MEME_SORT_FOLDER does not exist");
         } else {
-            fileMemes = Arrays.asList(directory.listFiles());
+            fileMemes = Arrays.asList(directory.listFiles(File::isFile));
             fileMemeIndex = 0;
         }
     }
@@ -282,5 +282,7 @@ public class MemeFilerController {
         DateFormat oDateFormatter = new SimpleDateFormat("MMddyyyy_HHmmss_");
         return oDateFormatter.format(new Date()) + XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
     }
+    
+
 
 }
