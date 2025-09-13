@@ -297,7 +297,6 @@ public class MemeFilerController {
 				+ XSaLTStringUtils.padLeftWithCharacter(Integer.toString(fileNumber), '0', 4);
 	}
 
-	// TODO: Implement video conversion if needed
 	private static void convertWebmToMp4(String inputPath, String outputPath) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", inputPath, "-c:v", "libx264", "-c:a", "aac", outputPath);
 		pb.redirectErrorStream(true);
