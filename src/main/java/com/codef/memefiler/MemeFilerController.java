@@ -303,10 +303,9 @@ public class MemeFilerController {
 		pb.redirectErrorStream(true);
 		Process process = pb.start();
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				// System.out.println(line); // Optional: log FFmpeg output
-			}
+		    while (reader.readLine() != null) {
+		        // Do nothing, just consume the output
+		    }
 		}
 		int exitCode = process.waitFor();
 		if (exitCode != 0) {
