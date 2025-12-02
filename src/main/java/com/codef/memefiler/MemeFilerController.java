@@ -155,7 +155,11 @@ public class MemeFilerController {
 		if (noOfFileInPath > 50) {
 			LOGGER.info("{} ---> {}", cleanFilePath, noOfFileInPath);
 		}
-		folderPaths.add(cleanFilePath);
+		
+		if (!cleanFilePath.contains("_SORT")) {
+			folderPaths.add(cleanFilePath);
+		}
+		
 	}
 
 	private File getNextImageSourcePath() {
