@@ -1,8 +1,18 @@
 package com.codef.memefiler;
 
-import com.codef.xsalt.utils.XSaLTFileSystemUtils;
-import com.codef.xsalt.utils.XSaLTStringUtils;
-import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,19 +21,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import com.codef.xsalt.utils.XSaLTStringUtils;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 public class MemeRenamerController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MemeRenamerController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MemeRenamerController.class);
+
+	private static final String ZEMES_SORT_FOLDER = "Zemes_SORT";
 
     private final Set<String> folderSet = new TreeSet<>();
     private final TreeSet<String> filetypes = new TreeSet<>();
@@ -32,12 +39,16 @@ public class MemeRenamerController {
     private int fileCount = 0;
     private int folderCount = 0;
     private int handledCount = 0;
+    
+    private StringBuffer logBuffer = new StringBuffer();
 
     @Autowired
     private Environment env;
 
     @GetMapping("/rename")
     public String indexLaunch(HttpServletRequest request, Model model) {
+    	
+    	logBuffer = new StringBuffer();
 
         fileCount = 0;
         folderCount = 0;
@@ -49,6 +60,14 @@ public class MemeRenamerController {
         model.addAttribute("TOTAL_FILES_VISITED", fileCount);
         model.addAttribute("TOTAL_FILES_HANDLED", handledCount);
         model.addAttribute("FILE_TYPES_HANDLED", filetypes);
+        
+        // write logBuffer to file
+        String logFilePath = env.getProperty("MEME_LOG_FILE_PATH");
+        try {
+			Files.write(Paths.get(logFilePath), logBuffer.toString().getBytes());
+		} catch (IOException e) {
+			LOGGER.error("Error writing log file: {}", e.toString(), e);
+		}
 
         return "index_rename";
     }
@@ -80,8 +99,11 @@ public class MemeRenamerController {
         String filePrefixNew = folderName.toLowerCase().replace(" ", "_");
         String[] fileNameNew = fileName.split("\\.");
         String nFileExtension = fileNameNew[fileNameNew.length - 1];
-
-        filetypes.add(nFileExtension);
+        
+        
+        if (!filePath.contains(ZEMES_SORT_FOLDER)) {
+        	filetypes.add(nFileExtension);
+		}
 
         if (!folderSet.contains(folderName)) {
             folderSet.add(folderName);
@@ -105,20 +127,12 @@ public class MemeRenamerController {
 
             String filePath = set.getKey();
             String targetFile = set.getValue();
+            
+            if (filePath.equalsIgnoreCase(targetFile) || targetFile.contains(ZEMES_SORT_FOLDER)) {
+				continue;
+			}
 
-            LOGGER.info(" Copied from: {} to {}", filePath, targetFile);
-
-            try {
-                XSaLTFileSystemUtils.copyFile(filePath, targetFile);
-                fileCount++;
-
-                XSaLTFileSystemUtils.deleteFileNew(filePath);
-                handledCount++;
-
-            } catch (IOException e1) {
-                e1.printStackTrace();
-                LOGGER.info(" Error handling: {} to {}", filePath, targetFile);
-            }
+        	logBuffer.append("Rename-Item \"").append(filePath).append("\" \"").append(targetFile).append("\"\n");
 
         }
 
