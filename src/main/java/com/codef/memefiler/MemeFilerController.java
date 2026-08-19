@@ -51,9 +51,12 @@ public class MemeFilerController {
 
 	private int totalCount = 1;
 
+	
+	// TODO:  This needs to be tested and the renaming script has to be for linux
+	
 	@GetMapping("/")
 	public String indexLaunch(HttpServletRequest request, Model model) {
-
+		
 		if (request.getParameter("restart") != null) {
 			folderPathsInitialized = false;
 		}
