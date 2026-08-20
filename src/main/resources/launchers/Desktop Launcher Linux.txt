@@ -1,0 +1,16 @@
+Create the desktop file:
+
+	nano ~/.local/share/applications/memefiler.desktop
+	
+	
+Paste the content in below:
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Start SimpFinApp
+Comment=Start simpfinapp
+Exec=java -jar /home/sirfozzie/GitRepos/MemeFiler/target/memefiler-0.0.1-SNAPSHOT.jar
+Icon=system-run
+Terminal=false
+Categories=Utility;
